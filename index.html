@@ -15,6 +15,8 @@
     --muted: #9aa0a6;
     --accent-red: #ff1f1f;
     --accent-red-border: #5a1010;
+    --accent-amber: #ffb800;
+    --accent-amber-border: #6a4f00;
     --lavender: #b9b3d9;
     --lavender-active: #8d83bf;
     --track: #ffffff;
@@ -143,6 +145,41 @@
     display: flex;
     justify-content: center;
     align-items: stretch;
+  }
+  .ms-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  .ms-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: transparent;
+    color: #fff;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.12s, color 0.12s, transform 0.05s;
+  }
+  .ms-btn:active { transform: scale(0.95); }
+  .mute-btn { border: 1.5px solid var(--accent-red-border); }
+  .mute-btn:hover { background: rgba(255, 31, 31, 0.18); }
+  .mute-btn.active {
+    background: var(--accent-red);
+    border-color: var(--accent-red-border);
+    box-shadow: 0 0 0 2px rgba(255, 31, 31, 0.25);
+  }
+  .solo-btn { border: 1.5px solid var(--accent-amber-border); }
+  .solo-btn:hover { background: rgba(255, 184, 0, 0.18); }
+  .solo-btn.active {
+    background: var(--accent-amber);
+    color: #1a1300;
+    border-color: var(--accent-amber-border);
+    box-shadow: 0 0 0 2px rgba(255, 184, 0, 0.3);
   }
   input[type=range].v-slider {
     -webkit-appearance: none;
@@ -308,7 +345,7 @@ function ensureCtx() {
     const t = state.tracks[id];
     if (!t.gain) {
       t.gain = ctx.createGain();
-      t.gain.gain.value = t.volume;
+      t.gain.gain.value = effectiveGain(id);
       t.gain.connect(masterGain);
     }
   }
@@ -481,13 +518,38 @@ function selectPiece(pieceId) {
   }
   bufferCache.clear();
   state.pieceId = pieceId;
-  // Preserve current volume slider positions across the rebuild.
-  const savedVolumes = {};
-  for (const id in state.tracks) savedVolumes[id] = state.tracks[id].volume;
-  buildTracks(savedVolumes);
+  // Preserve volume + mute + solo state across the rebuild.
+  const saved = {};
+  for (const id in state.tracks) {
+    const t = state.tracks[id];
+    saved[id] = { volume: t.volume, muted: t.muted, soloed: t.soloed };
+  }
+  buildTracks(saved);
 }
 
-function buildTracks(savedVolumes) {
+function effectiveGain(catId) {
+  const t = state.tracks[catId];
+  if (!t) return 0;
+  if (t.muted) return 0;
+  let anySolo = false;
+  for (const id in state.tracks) {
+    if (state.tracks[id].soloed) { anySolo = true; break; }
+  }
+  if (anySolo && !t.soloed) return 0;
+  return t.volume;
+}
+
+function applyAllGains() {
+  if (!ctx) return;
+  for (const id in state.tracks) {
+    const t = state.tracks[id];
+    if (t.gain) {
+      t.gain.gain.setTargetAtTime(effectiveGain(id), ctx.currentTime, RAMP_TIME);
+    }
+  }
+}
+
+function buildTracks(savedState) {
   const rack = document.getElementById('rack');
   rack.innerHTML = '';
 
@@ -501,12 +563,52 @@ function buildTracks(savedVolumes) {
 
   for (const cat of CATEGORIES) {
     const files = filesFor(cat.id);
-    const initialVol = (savedVolumes && savedVolumes[cat.id] != null)
-      ? savedVolumes[cat.id]
-      : DEFAULT_TRACK_VOL;
+    const saved = (savedState && savedState[cat.id]) || {};
+    const initialVol = saved.volume != null ? saved.volume : DEFAULT_TRACK_VOL;
+    const initialMuted = !!saved.muted;
+    const initialSoloed = !!saved.soloed;
 
     const track = document.createElement('div');
     track.className = 'track';
+
+    // ---- Mute / Solo row ----
+    const msRow = document.createElement('div');
+    msRow.className = 'ms-row';
+
+    const muteBtn = document.createElement('button');
+    muteBtn.type = 'button';
+    muteBtn.className = 'ms-btn mute-btn' + (initialMuted ? ' active' : '');
+    muteBtn.textContent = 'M';
+    muteBtn.title = 'Mute';
+    muteBtn.setAttribute('aria-label', cat.label + ' mute');
+    muteBtn.setAttribute('aria-pressed', String(initialMuted));
+    muteBtn.addEventListener('click', () => {
+      const t = state.tracks[cat.id];
+      if (!t) return;
+      t.muted = !t.muted;
+      muteBtn.classList.toggle('active', t.muted);
+      muteBtn.setAttribute('aria-pressed', String(t.muted));
+      applyAllGains();
+    });
+
+    const soloBtn = document.createElement('button');
+    soloBtn.type = 'button';
+    soloBtn.className = 'ms-btn solo-btn' + (initialSoloed ? ' active' : '');
+    soloBtn.textContent = 'S';
+    soloBtn.title = 'Solo';
+    soloBtn.setAttribute('aria-label', cat.label + ' solo');
+    soloBtn.setAttribute('aria-pressed', String(initialSoloed));
+    soloBtn.addEventListener('click', () => {
+      const t = state.tracks[cat.id];
+      if (!t) return;
+      t.soloed = !t.soloed;
+      soloBtn.classList.toggle('active', t.soloed);
+      soloBtn.setAttribute('aria-pressed', String(t.soloed));
+      applyAllGains();   // solo state on this track affects every track
+    });
+
+    msRow.appendChild(muteBtn);
+    msRow.appendChild(soloBtn);
 
     // ---- Slider ----
     const sliderWrap = document.createElement('div');
@@ -522,7 +624,10 @@ function buildTracks(savedVolumes) {
       const t = state.tracks[cat.id];
       if (!t) return;
       t.volume = v;
-      if (t.gain && ctx) t.gain.gain.setTargetAtTime(v, ctx.currentTime, RAMP_TIME);
+      if (t.gain && ctx) {
+        // Slider always reflects the "intended" volume, but solo/mute can still silence the track.
+        t.gain.gain.setTargetAtTime(effectiveGain(cat.id), ctx.currentTime, RAMP_TIME);
+      }
     });
     sliderWrap.appendChild(slider);
 
@@ -583,6 +688,7 @@ function buildTracks(savedVolumes) {
     dd.appendChild(btn);
     dd.appendChild(menu);
 
+    track.appendChild(msRow);
     track.appendChild(sliderWrap);
     track.appendChild(dd);
     rack.appendChild(track);
@@ -590,8 +696,10 @@ function buildTracks(savedVolumes) {
     state.tracks[cat.id] = {
       source: null, buffer: null, gain: null,
       volume: initialVol,
+      muted: initialMuted,
+      soloed: initialSoloed,
       file: files[0] || null,
-      dd, ddCur: curEl, slider,
+      dd, ddCur: curEl, slider, muteBtn, soloBtn,
     };
   }
 
@@ -601,7 +709,7 @@ function buildTracks(savedVolumes) {
     for (const id in state.tracks) {
       const t = state.tracks[id];
       t.gain = ctx.createGain();
-      t.gain.gain.value = t.volume;
+      t.gain.gain.value = effectiveGain(id);
       t.gain.connect(masterGain);
     }
   }
