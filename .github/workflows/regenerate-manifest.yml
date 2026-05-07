@@ -1,0 +1,42 @@
+name: Regenerate manifest
+
+# Runs whenever you push changes that affect the audio library or the script.
+# Re-runs generate_manifest.py and, if manifest.json changed, commits the new
+# version back to main. The follow-up commit is filtered out so this workflow
+# doesn't run on its own output.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "audio/**"
+      - "generate_manifest.py"
+  workflow_dispatch: {}      # also lets you run it manually from the Actions tab
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Regenerate manifest.json
+        run: python3 generate_manifest.py
+
+      - name: Commit and push if manifest changed
+        run: |
+          if [[ -n "$(git status --porcelain manifest.json)" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add manifest.json
+            git commit -m "auto: regenerate manifest.json"
+            git push
+          else
+            echo "manifest.json already up to date — nothing to commit."
+          fi
