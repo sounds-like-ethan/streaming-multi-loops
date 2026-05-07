@@ -13,6 +13,10 @@ on:
       - "generate_manifest.py"
   workflow_dispatch: {}      # also lets you run it manually from the Actions tab
 
+env:
+  # Run JS-based actions on Node 24 (Node 20 is being deprecated June 2026).
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   regenerate:
     runs-on: ubuntu-latest
