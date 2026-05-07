@@ -1,0 +1,45 @@
+{
+  "pieces": [
+    {
+      "id": "Dusk Song",
+      "label": "Dusk Song",
+      "categories": [
+        {
+          "id": "world_sounds",
+          "label": "World Sounds",
+          "files": []
+        },
+        {
+          "id": "neurotones",
+          "label": "Neurotones",
+          "files": []
+        },
+        {
+          "id": "foundation",
+          "label": "Foundation",
+          "files": []
+        },
+        {
+          "id": "harmony",
+          "label": "Harmony",
+          "files": []
+        },
+        {
+          "id": "melody",
+          "label": "Melody",
+          "files": []
+        },
+        {
+          "id": "accents",
+          "label": "Accents",
+          "files": []
+        },
+        {
+          "id": "low_end",
+          "label": "Low End",
+          "files": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<!-- soundscape-player layout v2 (vertical sliders, custom dropdowns) -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Soundscape Player</title>
+<style>
+  :root {
+    --bg: #000;
+    --text: #fff;
+    --muted: #9aa0a6;
+    --accent-red: #ff1f1f;
+    --accent-red-border: #5a1010;
+    --lavender: #b9b3d9;
+    --lavender-active: #8d83bf;
+    --track: #ffffff;
+    --dd-bg: #c9c8c8;
+    --dd-border: #6a6a6a;
+    --dd-fg: #111;
+    --dd-fg-soft: #444;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    min-height: 100vh;
+    padding: 56px 32px 48px;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: auto;
+  }
+  .wrap {
+    max-width: 1500px;
+    min-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* ---------- Piece selector row ---------- */
+  .piece-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 26px;
+  }
+  .piece-row .piece-label {
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .piece-row .dd { width: 360px; }
+
+  /* ---------- Master row ---------- */
+  .master {
+    display: grid;
+    grid-template-columns: 130px 1fr 110px;
+    align-items: center;
+    gap: 36px;
+    margin-bottom: 64px;
+  }
+  .play-btn {
+    background: var(--lavender);
+    border: none;
+    border-radius: 16px;
+    padding: 0;
+    color: #000;
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.15;
+    width: 130px;
+    height: 84px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.05s;
+    letter-spacing: 0.5px;
+  }
+  .play-btn:hover { background: #c5bfe1; }
+  .play-btn:active { transform: translateY(1px); }
+  .play-btn:disabled { opacity: 0.6; cursor: wait; }
+  .play-btn.playing { background: var(--lavender-active); color: #fff; }
+
+  .master-vol-wrap { display: flex; align-items: center; }
+  input[type=range].h-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    background: var(--track);
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  input[type=range].h-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent-red);
+    border: 1.5px solid var(--accent-red-border);
+    cursor: pointer;
+  }
+  input[type=range].h-slider::-moz-range-thumb {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent-red);
+    border: 1.5px solid var(--accent-red-border);
+    cursor: pointer;
+  }
+
+  .master-pct {
+    border: 1px solid #555;
+    border-radius: 8px;
+    padding: 18px 0;
+    font-size: 18px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    background: transparent;
+  }
+
+  /* ---------- Track rack ---------- */
+  .rack {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 32px;
+    align-items: end;
+  }
+  .track {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    min-width: 0;
+  }
+  .track-slider-wrap {
+    height: 380px;
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+  }
+  input[type=range].v-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    writing-mode: vertical-lr;
+    direction: rtl;
+    width: 6px;
+    height: 100%;
+    background: var(--track);
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  input[type=range].v-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent-red);
+    border: 1.5px solid var(--accent-red-border);
+    cursor: pointer;
+  }
+  input[type=range].v-slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent-red);
+    border: 1.5px solid var(--accent-red-border);
+    cursor: pointer;
+  }
+
+  /* ---------- Custom dropdown ---------- */
+  .dd {
+    position: relative;
+    width: 100%;
+  }
+  .dd-btn {
+    width: 100%;
+    background: var(--dd-bg);
+    border: 1.5px solid var(--dd-border);
+    border-radius: 16px;
+    padding: 14px 18px 16px;
+    text-align: left;
+    cursor: pointer;
+    color: var(--dd-fg);
+    font-family: inherit;
+    position: relative;
+    transition: filter 0.12s;
+  }
+  .dd-btn:hover { filter: brightness(0.96); }
+  .dd-btn:disabled { cursor: default; opacity: 0.7; }
+  .dd-cat {
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .dd-cur {
+    font-size: 11.5px;
+    color: var(--dd-fg-soft);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .dd-caret {
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    font-size: 11px;
+    color: var(--dd-fg);
+    line-height: 1;
+  }
+
+  .dd.loading .dd-btn { box-shadow: 0 0 0 2px rgba(108, 182, 255, 0.55); }
+  .dd.playing .dd-btn { box-shadow: 0 0 0 2px rgba(255, 31, 31, 0.7); }
+
+  .dd-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #d8d8d8;
+    border: 1px solid var(--dd-border);
+    border-radius: 12px;
+    z-index: 50;
+    max-height: 280px;
+    overflow-y: auto;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  }
+  .dd-opt {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #111;
+    border-bottom: 1px solid #c0c0c0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .dd-opt:last-child { border-bottom: none; }
+  .dd-opt:hover, .dd-opt.active { background: #b6b6b6; }
+
+  /* ---------- Footer ---------- */
+  footer {
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+    margin-top: 56px;
+  }
+  footer code {
+    background: #1c1c1c;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="piece-row" id="pieceRow"></div>
+
+    <div class="master">
+      <button id="playBtn" class="play-btn">PLAY</button>
+      <div class="master-vol-wrap">
+        <input id="masterVol" class="h-slider" type="range"
+               min="0" max="1" step="0.01" value="0.8" aria-label="Master volume">
+      </div>
+      <div id="masterPct" class="master-pct">80%</div>
+    </div>
+
+    <div class="rack" id="rack"></div>
+
+    <footer id="status">Loading manifest…</footer>
+  </div>
+
+<script>
+const CATEGORIES = [
+  { id: "world_sounds", label: "World Sound" },
+  { id: "neurotones",   label: "Neuro Tone" },
+  { id: "foundation",   label: "Foundation" },
+  { id: "harmony",      label: "Harmony" },
+  { id: "melody",       label: "Melody" },
+  { id: "accents",      label: "Accents" },
+  { id: "low_end",      label: "Low End" },
+];
+
+const DEFAULT_TRACK_VOL = 0.7;
+const RAMP_TIME = 0.015;
+const AUDIO_EXT_RX = /\.(wav|mp3|ogg|m4a|flac|aac|webm|opus)$/i;
+const stripExt = f => f.replace(AUDIO_EXT_RX, '');
+
+// --- Audio graph -----------------------------------------------------------
+let ctx = null;
+let masterGain = null;
+const bufferCache = new Map(); // url -> Promise<AudioBuffer>
+
+function ensureCtx() {
+  if (ctx) return ctx;
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = ctx.createGain();
+  masterGain.gain.value = state.master;
+  masterGain.connect(ctx.destination);
+  for (const id in state.tracks) {
+    const t = state.tracks[id];
+    if (!t.gain) {
+      t.gain = ctx.createGain();
+      t.gain.gain.value = t.volume;
+      t.gain.connect(masterGain);
+    }
+  }
+  return ctx;
+}
+
+async function getBuffer(url) {
+  if (!bufferCache.has(url)) {
+    bufferCache.set(url, (async () => {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('fetch ' + url + ' -> HTTP ' + r.status);
+      const arr = await r.arrayBuffer();
+      return await new Promise((resolve, reject) => {
+        ctx.decodeAudioData(arr, resolve, reject);
+      });
+    })().catch(err => { bufferCache.delete(url); throw err; }));
+  }
+  return bufferCache.get(url);
+}
+
+const urlFor = (catId, filename) =>
+  'audio/' + encodeURIComponent(state.pieceId) + '/' +
+  catId + '/' + encodeURIComponent(filename);
+
+// --- State -----------------------------------------------------------------
+const state = {
+  manifest: null,
+  master: 0.8,
+  tracks: {},   // id -> { source, buffer, gain, volume, file, dd, ddCur, slider }
+  playing: false,
+  pieceId: null,
+};
+
+// --- Manifest --------------------------------------------------------------
+async function loadManifest() {
+  if (location.protocol === 'file:') {
+    document.getElementById('status').innerHTML =
+      "<b>This page needs to run from a local web server.</b><br>" +
+      "Browsers block audio loading from <code>file://</code> URLs for security. " +
+      "Double-click <code>start.command</code> (Mac) or <code>start.bat</code> (Windows) " +
+      "in the project folder, or run <code>python3 -m http.server 8000</code> in Terminal " +
+      "and visit <code>http://localhost:8000</code>.";
+    return false;
+  }
+  try {
+    const r = await fetch('manifest.json', { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    state.manifest = await r.json();
+    return true;
+  } catch (e) {
+    document.getElementById('status').innerHTML =
+      "Couldn't load <code>manifest.json</code>. Make sure it sits next to <code>index.html</code>.";
+    console.error(e);
+    return false;
+  }
+}
+
+function pieces() {
+  return (state.manifest && state.manifest.pieces) || [];
+}
+
+function currentPiece() {
+  return pieces().find(p => p.id === state.pieceId);
+}
+
+function filesFor(catId) {
+  const p = currentPiece();
+  if (!p || !p.categories) return [];
+  const c = p.categories.find(x => x.id === catId);
+  return (c && c.files) || [];
+}
+
+// --- UI build --------------------------------------------------------------
+function closeAllDropdowns(except) {
+  document.querySelectorAll('.dd-menu').forEach(m => {
+    if (m !== except) m.hidden = true;
+  });
+}
+document.addEventListener('click', () => closeAllDropdowns());
+
+function buildPieceSelector() {
+  const row = document.getElementById('pieceRow');
+  row.innerHTML = '';
+
+  const ps = pieces();
+  if (ps.length === 0) {
+    row.innerHTML =
+      '<div class="piece-label" style="text-transform:none;letter-spacing:0;">' +
+      'No pieces found. Create a folder under <code style="background:#1c1c1c;padding:1px 6px;border-radius:4px;">audio/</code> ' +
+      '(e.g. <code style="background:#1c1c1c;padding:1px 6px;border-radius:4px;">audio/Dusk Song/</code>), ' +
+      'then run <code style="background:#1c1c1c;padding:1px 6px;border-radius:4px;">python3 generate_manifest.py</code>.' +
+      '</div>';
+    return;
+  }
+
+  const label = document.createElement('div');
+  label.className = 'piece-label';
+  label.textContent = 'Piece';
+
+  const dd = document.createElement('div');
+  dd.className = 'dd';
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'dd-btn';
+
+  const catEl = document.createElement('div');
+  catEl.className = 'dd-cat';
+  catEl.textContent = 'Now playing:';
+
+  const curEl = document.createElement('div');
+  curEl.className = 'dd-cur';
+
+  const caret = document.createElement('div');
+  caret.className = 'dd-caret';
+  caret.textContent = '▾';
+
+  btn.appendChild(catEl);
+  btn.appendChild(curEl);
+  btn.appendChild(caret);
+
+  const menu = document.createElement('div');
+  menu.className = 'dd-menu';
+  menu.hidden = true;
+
+  for (const p of ps) {
+    const opt = document.createElement('div');
+    opt.className = 'dd-opt';
+    opt.textContent = p.label;
+    opt.dataset.id = p.id;
+    opt.addEventListener('click', e => {
+      e.stopPropagation();
+      markActive(menu, opt);
+      curEl.textContent = p.label;
+      menu.hidden = true;
+      selectPiece(p.id);
+    });
+    menu.appendChild(opt);
+  }
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const wasOpen = !menu.hidden;
+    closeAllDropdowns();
+    menu.hidden = wasOpen;
+  });
+
+  dd.appendChild(btn);
+  dd.appendChild(menu);
+  row.appendChild(label);
+  row.appendChild(dd);
+
+  // Initial selection: first piece.
+  const initial = ps[0];
+  curEl.textContent = initial.label;
+  markActive(menu, menu.firstElementChild);
+  state.pieceId = initial.id;
+}
+
+function selectPiece(pieceId) {
+  if (state.pieceId === pieceId) return;
+  // Stop everything from the old piece and clear cached buffers (URLs change).
+  if (state.playing) {
+    stopAll();
+    state.playing = false;
+    playBtn.textContent = 'PLAY';
+    playBtn.classList.remove('playing');
+  } else {
+    stopAll();
+  }
+  bufferCache.clear();
+  state.pieceId = pieceId;
+  // Preserve current volume slider positions across the rebuild.
+  const savedVolumes = {};
+  for (const id in state.tracks) savedVolumes[id] = state.tracks[id].volume;
+  buildTracks(savedVolumes);
+}
+
+function buildTracks(savedVolumes) {
+  const rack = document.getElementById('rack');
+  rack.innerHTML = '';
+
+  // Detach old per-track gain nodes so we can rewire fresh ones on next ensureCtx.
+  // (The masterGain stays put.)
+  for (const id in state.tracks) {
+    const t = state.tracks[id];
+    if (t.gain) { try { t.gain.disconnect(); } catch (e) {} }
+  }
+  state.tracks = {};
+
+  for (const cat of CATEGORIES) {
+    const files = filesFor(cat.id);
+    const initialVol = (savedVolumes && savedVolumes[cat.id] != null)
+      ? savedVolumes[cat.id]
+      : DEFAULT_TRACK_VOL;
+
+    const track = document.createElement('div');
+    track.className = 'track';
+
+    // ---- Slider ----
+    const sliderWrap = document.createElement('div');
+    sliderWrap.className = 'track-slider-wrap';
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.className = 'v-slider';
+    slider.min = 0; slider.max = 1; slider.step = 0.01;
+    slider.value = String(initialVol);
+    slider.setAttribute('aria-label', cat.label + ' volume');
+    slider.addEventListener('input', () => {
+      const v = parseFloat(slider.value);
+      const t = state.tracks[cat.id];
+      if (!t) return;
+      t.volume = v;
+      if (t.gain && ctx) t.gain.gain.setTargetAtTime(v, ctx.currentTime, RAMP_TIME);
+    });
+    sliderWrap.appendChild(slider);
+
+    // ---- Dropdown ----
+    const dd = document.createElement('div');
+    dd.className = 'dd';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'dd-btn';
+    if (files.length === 0) btn.disabled = true;
+
+    const catEl = document.createElement('div');
+    catEl.className = 'dd-cat';
+    catEl.textContent = cat.label + ':';
+
+    const curEl = document.createElement('div');
+    curEl.className = 'dd-cur';
+    curEl.textContent = files.length
+      ? stripExt(files[0])
+      : '(empty — drop files into ' + cat.id + '/)';
+
+    const caret = document.createElement('div');
+    caret.className = 'dd-caret';
+    caret.textContent = '▾';
+
+    btn.appendChild(catEl);
+    btn.appendChild(curEl);
+    btn.appendChild(caret);
+
+    const menu = document.createElement('div');
+    menu.className = 'dd-menu';
+    menu.hidden = true;
+
+    for (const f of files) {
+      const opt = document.createElement('div');
+      opt.className = 'dd-opt';
+      opt.textContent = stripExt(f);
+      opt.dataset.file = f;
+      opt.addEventListener('click', e => {
+        e.stopPropagation();
+        markActive(menu, opt);
+        curEl.textContent = stripExt(f);
+        setTrack(cat.id, f);
+        menu.hidden = true;
+      });
+      menu.appendChild(opt);
+    }
+    if (files.length) markActive(menu, menu.firstElementChild);
+
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const wasOpen = !menu.hidden;
+      closeAllDropdowns();
+      menu.hidden = wasOpen;
+    });
+
+    dd.appendChild(btn);
+    dd.appendChild(menu);
+
+    track.appendChild(sliderWrap);
+    track.appendChild(dd);
+    rack.appendChild(track);
+
+    state.tracks[cat.id] = {
+      source: null, buffer: null, gain: null,
+      volume: initialVol,
+      file: files[0] || null,
+      dd, ddCur: curEl, slider,
+    };
+  }
+
+  // If audio context already exists (user has played before), wire up new gain
+  // nodes to the master so volumes work immediately on the new piece.
+  if (ctx) {
+    for (const id in state.tracks) {
+      const t = state.tracks[id];
+      t.gain = ctx.createGain();
+      t.gain.gain.value = t.volume;
+      t.gain.connect(masterGain);
+    }
+  }
+
+  const total = CATEGORIES.reduce((n, c) => n + filesFor(c.id).length, 0);
+  const piece = currentPiece();
+  document.getElementById('status').textContent = piece
+    ? piece.label + ' — ' + total + ' file' + (total === 1 ? '' : 's') + ' across 7 categories.'
+    : 'No piece selected.';
+}
+
+function markActive(menu, opt) {
+  menu.querySelectorAll('.dd-opt').forEach(o => o.classList.remove('active'));
+  if (opt) opt.classList.add('active');
+}
+
+// --- Track control ---------------------------------------------------------
+async function setTrack(catId, filename) {
+  const t = state.tracks[catId];
+  if (!t) return;
+  t.file = filename;
+  if (!ctx) return;  // first decode happens at first Play
+  t.dd.classList.add('loading');
+  t.dd.classList.remove('playing');
+  try {
+    t.buffer = await getBuffer(urlFor(catId, filename));
+    t.dd.classList.remove('loading');
+    if (state.playing) startSource(catId);
+  } catch (e) {
+    t.dd.classList.remove('loading');
+    console.warn('Failed to load', catId, filename, e);
+  }
+}
+
+function startSource(catId, when) {
+  const t = state.tracks[catId];
+  if (!t || !t.buffer) return;
+  if (t.source) {
+    try { t.source.stop(); } catch (e) {}
+    try { t.source.disconnect(); } catch (e) {}
+    t.source = null;
+  }
+  const src = ctx.createBufferSource();
+  src.buffer = t.buffer;
+  src.loop = true;        // sample-accurate looping in the audio thread
+  src.connect(t.gain);
+  src.start(when != null ? when : ctx.currentTime);
+  t.source = src;
+  t.dd.classList.add('playing');
+  t.dd.classList.remove('loading');
+}
+
+function stopAll() {
+  for (const id in state.tracks) {
+    const t = state.tracks[id];
+    if (t.source) {
+      try { t.source.stop(); } catch (e) {}
+      try { t.source.disconnect(); } catch (e) {}
+      t.source = null;
+    }
+    t.dd.classList.remove('playing');
+  }
+}
+
+async function startAll() {
+  await Promise.all(CATEGORIES.map(async cat => {
+    const t = state.tracks[cat.id];
+    if (!t || !t.file) return;
+    if (!t.buffer) t.dd.classList.add('loading');
+    try {
+      t.buffer = await getBuffer(urlFor(cat.id, t.file));
+      t.dd.classList.remove('loading');
+    } catch (e) {
+      t.dd.classList.remove('loading');
+      console.warn('Failed to decode', cat.id, t.file, e);
+    }
+  }));
+  const t0 = ctx.currentTime + 0.08;
+  for (const cat of CATEGORIES) {
+    const t = state.tracks[cat.id];
+    if (t && t.buffer) startSource(cat.id, t0);
+  }
+}
+
+// --- Master controls -------------------------------------------------------
+document.getElementById('masterVol').addEventListener('input', e => {
+  state.master = parseFloat(e.target.value);
+  document.getElementById('masterPct').textContent =
+    Math.round(state.master * 100) + '%';
+  if (masterGain) {
+    masterGain.gain.setTargetAtTime(state.master, ctx.currentTime, RAMP_TIME);
+  }
+});
+
+const playBtn = document.getElementById('playBtn');
+playBtn.addEventListener('click', async () => {
+  ensureCtx();
+  if (ctx.state === 'suspended') {
+    try { await ctx.resume(); } catch (e) { console.warn(e); }
+  }
+  if (state.playing) {
+    stopAll();
+    state.playing = false;
+    playBtn.textContent = 'PLAY';
+    playBtn.classList.remove('playing');
+  } else {
+    playBtn.disabled = true;
+    playBtn.textContent = 'LOADING…';
+    try {
+      await startAll();
+      state.playing = true;
+      playBtn.textContent = 'STOP';
+      playBtn.classList.add('playing');
+    } finally {
+      playBtn.disabled = false;
+    }
+  }
+});
+
+(async () => {
+  if (!(await loadManifest())) return;
+  buildPieceSelector();
+  if (state.pieceId) buildTracks();
+})();
+</script>
+</body>
+</html>

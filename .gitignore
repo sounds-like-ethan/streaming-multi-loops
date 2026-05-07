@@ -1,0 +1,11 @@
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor swap files
+*~
+*.swp
+
+# Editor configs (uncomment if you don't want to share these)
+# .vscode/
+# .idea/
