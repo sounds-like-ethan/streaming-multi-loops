@@ -7,37 +7,53 @@
         {
           "id": "world_sounds",
           "label": "World Sounds",
-          "files": []
+          "files": [
+            "00_Babbling_Brook_02.wav",
+            "10_Warm_Glow_01.wav",
+            "16_Into_The_Woods_01.wav"
+          ]
         },
         {
           "id": "neurotones",
           "label": "Neurotones",
-          "files": []
+          "files": [
+            "binaural_beat_1hz_65.4.wav"
+          ]
         },
         {
           "id": "foundation",
           "label": "Foundation",
-          "files": []
+          "files": [
+            "pad_01.wav"
+          ]
         },
         {
           "id": "harmony",
           "label": "Harmony",
-          "files": []
+          "files": [
+            "choir_01.wav"
+          ]
         },
         {
           "id": "melody",
           "label": "Melody",
-          "files": []
+          "files": [
+            "melody_01.wav"
+          ]
         },
         {
           "id": "accents",
           "label": "Accents",
-          "files": []
+          "files": [
+            "accents_01.wav"
+          ]
         },
         {
           "id": "low_end",
           "label": "Low End",
-          "files": []
+          "files": [
+            "bass_01.wav"
+          ]
         }
       ]
     }
